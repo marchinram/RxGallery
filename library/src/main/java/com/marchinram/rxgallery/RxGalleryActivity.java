@@ -3,15 +3,21 @@ package com.marchinram.rxgallery;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Pair;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
 
 public final class RxGalleryActivity extends Activity {
 
@@ -27,14 +33,14 @@ public final class RxGalleryActivity extends Activity {
 
     private static final int RC_GALLERY = 1000;
 
-    private static final int RC_TAKE_PHOTO = 1001;
+    private static final int RC_TAKE_PHOTO_OR_VIDEO = 1001;
+
+    private Uri outputUri;
 
     private BroadcastReceiver disposedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            finishActivity(RC_GALLERY);
-            finishActivity(RC_TAKE_PHOTO);
-            finish();
+            finishAll();
         }
     };
 
@@ -48,8 +54,11 @@ public final class RxGalleryActivity extends Activity {
 
         RxGallery.Request request = getIntent().getParcelableExtra(EXTRA_REQUEST);
         switch (request.getSource()) {
-            default:
+            case GALLERY:
                 intentRequestPair = getGalleryIntentRequestPair(request);
+                break;
+            default:
+                intentRequestPair = getPhotoOrVideoCaptureIntentRequestPair(request);
                 break;
         }
 
@@ -77,11 +86,21 @@ public final class RxGalleryActivity extends Activity {
                 case RC_GALLERY:
                     uris = handleGallery(data);
                     break;
+                default:
+                    uris.add(outputUri);
+                    break;
             }
         }
 
         intent.putParcelableArrayListExtra(EXTRA_URIS, uris);
         sendBroadcast(intent);
+
+        finishAll();
+    }
+
+    private void finishAll() {
+        finishActivity(RC_GALLERY);
+        finishActivity(RC_TAKE_PHOTO_OR_VIDEO);
         finish();
     }
 
@@ -128,6 +147,31 @@ public final class RxGalleryActivity extends Activity {
             }
         }
         return uris;
+    }
+
+    private Pair<Intent, Integer> getPhotoOrVideoCaptureIntentRequestPair(RxGallery.Request request) {
+        String action = request.getSource() == RxGallery.Source.PHOTO_CAPTURE ?
+                MediaStore.ACTION_IMAGE_CAPTURE : MediaStore.ACTION_VIDEO_CAPTURE;
+        Intent intent = new Intent(action);
+
+        if (request.getOutputUri() != null) {
+            outputUri = request.getOutputUri();
+        } else {
+            Uri uri = request.getSource() == RxGallery.Source.PHOTO_CAPTURE ?
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI : MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+            outputUri = createMedia(uri);
+        }
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, outputUri);
+
+        return new Pair<>(intent, RC_TAKE_PHOTO_OR_VIDEO);
+    }
+
+    private Uri createMedia(Uri uri) {
+        ContentResolver contentResolver = getContentResolver();
+        ContentValues cv = new ContentValues();
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        cv.put(MediaStore.Images.Media.TITLE, timeStamp);
+        return contentResolver.insert(uri, cv);
     }
 
 }

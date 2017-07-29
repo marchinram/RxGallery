@@ -25,8 +25,8 @@ public final class RxGallery {
 
     public enum Source {
         GALLERY,
-        TAKE_PHOTO,
-        TAKE_VIDEO
+        PHOTO_CAPTURE,
+        VIDEO_CAPTURE
     }
 
     public enum MimeType {
@@ -46,11 +46,16 @@ public final class RxGallery {
         }
     }
 
+    /**
+     * @param context
+     * @param request
+     * @return
+     */
     public static Observable<List<Uri>> request(@NonNull final Context context, @NonNull final Request request) {
         return Observable.create(new ObservableOnSubscribe<List<Uri>>() {
             @Override
             public void subscribe(@io.reactivex.annotations.NonNull final ObservableEmitter<List<Uri>> e) throws Exception {
-                final BroadcastReceiver urisReceiver = new BroadcastReceiver() {
+                final BroadcastReceiver receiver = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
                         if (!e.isDisposed()) {
@@ -58,10 +63,9 @@ public final class RxGallery {
                                 e.onError(new ActivityNotFoundException("No activity found to handle request"));
                             } else if (intent.hasExtra(RxGalleryActivity.EXTRA_URIS)) {
                                 List<Uri> uris = intent.getParcelableArrayListExtra(RxGalleryActivity.EXTRA_URIS);
-                                if (uris == null) {
-                                    uris = new ArrayList<>();
+                                if (uris != null && uris.size() > 0) {
+                                    e.onNext(uris);
                                 }
-                                e.onNext(uris);
                             }
                             e.onComplete();
                         }
@@ -69,12 +73,12 @@ public final class RxGallery {
                 };
 
                 IntentFilter intentFilter = new IntentFilter(RxGalleryActivity.FINISHED_ACTION);
-                context.registerReceiver(urisReceiver, intentFilter);
+                context.registerReceiver(receiver, intentFilter);
 
                 e.setDisposable(new MainThreadDisposable() {
                     @Override
                     protected void onDispose() {
-                        context.unregisterReceiver(urisReceiver);
+                        context.unregisterReceiver(receiver);
                         context.sendBroadcast(new Intent(RxGalleryActivity.DISPOSED_ACTION));
                     }
                 });
@@ -94,22 +98,25 @@ public final class RxGallery {
 
         private final boolean multiSelectEnabled;
 
-        private Request(Source source, List<MimeType> mimeTypes, boolean multiSelectEnabled) {
+        private final Uri outputUri;
+
+        private Request(Source source, List<MimeType> mimeTypes, boolean multiSelectEnabled, Uri outputUri) {
             this.source = source;
             this.mimeTypes = mimeTypes;
             this.multiSelectEnabled = multiSelectEnabled;
+            this.outputUri = outputUri;
         }
 
         private Request(Parcel in) {
             source = Source.values()[in.readInt()];
-
             mimeTypes = new ArrayList<>();
             int mimeTypesSize = in.readInt();
             for (int i = 0; i < mimeTypesSize; i++) {
                 mimeTypes.add(MimeType.values()[in.readInt()]);
             }
-
             multiSelectEnabled = in.readInt() == 1;
+            String uriString = in.readString();
+            outputUri = uriString != null ? Uri.parse(uriString) : null;
         }
 
         Source getSource() {
@@ -124,6 +131,10 @@ public final class RxGallery {
             return multiSelectEnabled;
         }
 
+        Uri getOutputUri() {
+            return outputUri;
+        }
+
         @Override
         public void writeToParcel(Parcel dest, int flags) {
             dest.writeInt(source.ordinal());
@@ -132,6 +143,7 @@ public final class RxGallery {
                 dest.writeInt(mimeType.ordinal());
             }
             dest.writeInt(multiSelectEnabled ? 1 : 0);
+            dest.writeString(outputUri != null ? outputUri.toString() : null);
         }
 
         @Override
@@ -183,43 +195,68 @@ public final class RxGallery {
 
             private boolean multiSelectEnabled;
 
+            private Uri outputUri;
+
+            /**
+             *
+             */
             public Builder() {
                 mimeTypes.add(MimeType.IMAGE);
             }
 
+            /**
+             * @param source
+             * @return
+             */
             public Builder setSource(@NonNull Source source) {
                 this.source = source;
                 return this;
             }
 
-            public Builder setMimeType(@NonNull MimeType mimeType) {
-                this.mimeTypes = Collections.singletonList(mimeType);
-                return this;
-            }
-
-            @RequiresApi(Build.VERSION_CODES.KITKAT)
+            /**
+             * @param mimeTypes
+             * @return
+             */
             public Builder setMimeTypes(@NonNull MimeType... mimeTypes) {
                 if (mimeTypes.length == 0) {
                     return this;
                 }
-
-                this.mimeTypes = new ArrayList<>();
-                for (MimeType mimeType : mimeTypes) {
-                    if (!this.mimeTypes.contains(mimeType)) {
-                        this.mimeTypes.add(mimeType);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    this.mimeTypes = new ArrayList<>();
+                    for (MimeType mimeType : mimeTypes) {
+                        if (!this.mimeTypes.contains(mimeType)) {
+                            this.mimeTypes.add(mimeType);
+                        }
                     }
+                } else {
+                    this.mimeTypes = Collections.singletonList(mimeTypes[0]);
                 }
                 return this;
             }
 
+            /**
+             * @param multiSelectEnabled
+             * @return
+             */
             @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
             public Builder setMultiSelectEnabled(boolean multiSelectEnabled) {
                 this.multiSelectEnabled = multiSelectEnabled;
                 return this;
             }
 
+            /**
+             * @param outputUri
+             */
+            public Builder setOutputUri(Uri outputUri) {
+                this.outputUri = outputUri;
+                return this;
+            }
+
+            /**
+             * @return
+             */
             public Request build() {
-                return new Request(source, mimeTypes, multiSelectEnabled);
+                return new Request(source, mimeTypes, multiSelectEnabled, outputUri);
             }
 
         }
