@@ -10,20 +10,20 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
         android:onClick="pickFromGallery"
-        android:text="Pick From Gallery" />
+        android:text="@string/pick_from_gallery" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
         android:onClick="takePhoto"
-        android:text="Take Photo" />
+        android:text="@string/take_photo" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
         android:onClick="takeVideo"
-        android:text="Take Video" />
+        android:text="@string/take_video" />
 
 </LinearLayout>
