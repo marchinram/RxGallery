@@ -10,15 +10,15 @@ import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleOnSubscribe;
 import io.reactivex.android.MainThreadDisposable;
 
 public final class RxGallery {
@@ -34,7 +34,7 @@ public final class RxGallery {
         VIDEO("video/*"),
         AUDIO("audio/*");
 
-        private String mimeTypeString;
+        private final String mimeTypeString;
 
         MimeType(String mimeTypeString) {
             this.mimeTypeString = mimeTypeString;
@@ -51,23 +51,31 @@ public final class RxGallery {
      * @param request
      * @return
      */
-    public static Observable<List<Uri>> request(@NonNull final Context context, @NonNull final Request request) {
-        return Observable.create(new ObservableOnSubscribe<List<Uri>>() {
+    public static Observable<List<Uri>> requestObservable(@NonNull final Context context, @NonNull final Request request) {
+        return requestSingle(context, request).toObservable();
+    }
+
+    /**
+     * @param context
+     * @param request
+     * @return
+     */
+    public static Single<List<Uri>> requestSingle(@NonNull final Context context, @NonNull final Request request) {
+        return Single.create(new SingleOnSubscribe<List<Uri>>() {
             @Override
-            public void subscribe(@io.reactivex.annotations.NonNull final ObservableEmitter<List<Uri>> e) throws Exception {
+            public void subscribe(@io.reactivex.annotations.NonNull final SingleEmitter<List<Uri>> e) throws Exception {
                 final BroadcastReceiver receiver = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
                         if (!e.isDisposed()) {
                             if (intent.hasExtra(RxGalleryActivity.EXTRA_ERROR_NO_ACTIVITY)) {
                                 e.onError(new ActivityNotFoundException("No activity found to handle request"));
+                            } else if (intent.hasExtra(RxGalleryActivity.EXTRA_ERROR_SECURITY)) {
+                                e.onError((Throwable) intent.getSerializableExtra(RxGalleryActivity.EXTRA_ERROR_SECURITY));
                             } else if (intent.hasExtra(RxGalleryActivity.EXTRA_URIS)) {
                                 List<Uri> uris = intent.getParcelableArrayListExtra(RxGalleryActivity.EXTRA_URIS);
-                                if (uris != null && uris.size() > 0) {
-                                    e.onNext(uris);
-                                }
+                                e.onSuccess(uris != null ? uris : new ArrayList<Uri>());
                             }
-                            e.onComplete();
                         }
                     }
                 };
@@ -238,7 +246,6 @@ public final class RxGallery {
              * @param multiSelectEnabled
              * @return
              */
-            @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
             public Builder setMultiSelectEnabled(boolean multiSelectEnabled) {
                 this.multiSelectEnabled = multiSelectEnabled;
                 return this;

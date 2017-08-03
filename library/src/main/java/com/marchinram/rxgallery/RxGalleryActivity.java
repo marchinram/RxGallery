@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.util.Pair;
 
 import java.text.SimpleDateFormat;
@@ -31,13 +32,15 @@ public final class RxGalleryActivity extends Activity {
 
     static final String EXTRA_ERROR_NO_ACTIVITY = "extraErrorNoActivity";
 
+    static final String EXTRA_ERROR_SECURITY = "extraErrorSecurity";
+
     private static final int RC_GALLERY = 1000;
 
     private static final int RC_TAKE_PHOTO_OR_VIDEO = 1001;
 
     private Uri outputUri;
 
-    private BroadcastReceiver disposedReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver disposedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             finishAll();
@@ -50,23 +53,18 @@ public final class RxGalleryActivity extends Activity {
 
         registerReceiver(disposedReceiver, new IntentFilter(DISPOSED_ACTION));
 
-        Pair<Intent, Integer> intentRequestPair;
-
         RxGallery.Request request = getIntent().getParcelableExtra(EXTRA_REQUEST);
         switch (request.getSource()) {
             case GALLERY:
-                intentRequestPair = getGalleryIntentRequestPair(request);
+                handleIntentRequestPair(getGalleryIntentRequestPair(request));
                 break;
             default:
-                intentRequestPair = getPhotoOrVideoCaptureIntentRequestPair(request);
+                try {
+                    handleIntentRequestPair(getPhotoOrVideoCaptureIntentRequestPair(request));
+                } catch (SecurityException e) {
+                    sendErrorSecurity(e);
+                }
                 break;
-        }
-
-        if (intentRequestPair.first.resolveActivity(getPackageManager()) != null) {
-            startActivityForResult(intentRequestPair.first, intentRequestPair.second);
-        } else {
-            sendErrorNoActivity();
-            finish();
         }
     }
 
@@ -108,6 +106,22 @@ public final class RxGalleryActivity extends Activity {
         Intent intent = new Intent(FINISHED_ACTION);
         intent.putExtra(EXTRA_ERROR_NO_ACTIVITY, true);
         sendBroadcast(intent);
+        finishAll();
+    }
+
+    private void sendErrorSecurity(SecurityException e) {
+        Intent intent = new Intent(FINISHED_ACTION);
+        intent.putExtra(EXTRA_ERROR_SECURITY, e);
+        sendBroadcast(intent);
+        finishAll();
+    }
+
+    private void handleIntentRequestPair(Pair<Intent, Integer> intentRequestPair) {
+        if (intentRequestPair.first.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(intentRequestPair.first, intentRequestPair.second);
+        } else {
+            sendErrorNoActivity();
+        }
     }
 
     private Pair<Intent, Integer> getGalleryIntentRequestPair(RxGallery.Request request) {
@@ -134,6 +148,31 @@ public final class RxGalleryActivity extends Activity {
         return new Pair<>(intent, RC_GALLERY);
     }
 
+    private Pair<Intent, Integer> getPhotoOrVideoCaptureIntentRequestPair(RxGallery.Request request) throws SecurityException {
+        String action = request.getSource() == RxGallery.Source.PHOTO_CAPTURE ?
+                MediaStore.ACTION_IMAGE_CAPTURE : MediaStore.ACTION_VIDEO_CAPTURE;
+        Intent intent = new Intent(action);
+
+        if (request.getOutputUri() != null) {
+            outputUri = request.getOutputUri();
+        } else {
+            outputUri = createMedia(request);
+        }
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, outputUri);
+
+        return new Pair<>(intent, RC_TAKE_PHOTO_OR_VIDEO);
+    }
+
+    private Uri createMedia(@NonNull RxGallery.Request request) throws SecurityException {
+        Uri uri = request.getSource() == RxGallery.Source.PHOTO_CAPTURE ?
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI : MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+        ContentResolver contentResolver = getContentResolver();
+        ContentValues cv = new ContentValues();
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        cv.put(MediaStore.Images.Media.TITLE, timeStamp);
+        return contentResolver.insert(uri, cv);
+    }
+
     private ArrayList<Uri> handleGallery(Intent data) {
         ArrayList<Uri> uris = new ArrayList<>();
         if (data.getData() != null) { // Single select
@@ -147,31 +186,6 @@ public final class RxGalleryActivity extends Activity {
             }
         }
         return uris;
-    }
-
-    private Pair<Intent, Integer> getPhotoOrVideoCaptureIntentRequestPair(RxGallery.Request request) {
-        String action = request.getSource() == RxGallery.Source.PHOTO_CAPTURE ?
-                MediaStore.ACTION_IMAGE_CAPTURE : MediaStore.ACTION_VIDEO_CAPTURE;
-        Intent intent = new Intent(action);
-
-        if (request.getOutputUri() != null) {
-            outputUri = request.getOutputUri();
-        } else {
-            Uri uri = request.getSource() == RxGallery.Source.PHOTO_CAPTURE ?
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI : MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-            outputUri = createMedia(uri);
-        }
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, outputUri);
-
-        return new Pair<>(intent, RC_TAKE_PHOTO_OR_VIDEO);
-    }
-
-    private Uri createMedia(Uri uri) {
-        ContentResolver contentResolver = getContentResolver();
-        ContentValues cv = new ContentValues();
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        cv.put(MediaStore.Images.Media.TITLE, timeStamp);
-        return contentResolver.insert(uri, cv);
     }
 
 }
