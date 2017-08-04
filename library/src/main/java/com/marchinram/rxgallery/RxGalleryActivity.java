@@ -12,7 +12,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.support.annotation.NonNull;
 import android.util.Pair;
 
 import java.text.SimpleDateFormat;
@@ -96,6 +95,8 @@ public final class RxGalleryActivity extends Activity {
                     uris.add(outputUri);
                     break;
             }
+        } else if (requestCode == RC_TAKE_PHOTO) {
+            getContentResolver().delete(outputUri, null, null);
         }
 
         intent.putParcelableArrayListExtra(EXTRA_URIS, uris);
@@ -163,7 +164,7 @@ public final class RxGalleryActivity extends Activity {
         if (request.getOutputUri() != null) {
             outputUri = request.getOutputUri();
         } else {
-            outputUri = createMedia(request);
+            outputUri = createImage();
         }
         intent.putExtra(MediaStore.EXTRA_OUTPUT, outputUri);
 
@@ -175,14 +176,12 @@ public final class RxGalleryActivity extends Activity {
         return new Pair<>(intent, RC_TAKE_VIDEO);
     }
 
-    private Uri createMedia(@NonNull RxGallery.Request request) throws SecurityException {
-        Uri uri = request.getSource() == RxGallery.Source.PHOTO_CAPTURE ?
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI : MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+    private Uri createImage() throws SecurityException {
         ContentResolver contentResolver = getContentResolver();
         ContentValues cv = new ContentValues();
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         cv.put(MediaStore.Images.Media.TITLE, timeStamp);
-        return contentResolver.insert(uri, cv);
+        return contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv);
     }
 
     private ArrayList<Uri> handleGallery(Intent data) {
