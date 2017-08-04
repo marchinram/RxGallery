@@ -25,9 +25,9 @@ dependencies {
 **__Picking items from the gallery__**
 
 ```
-Single<List<Uri>> RxGallery.gallery(@NonNull Activity activity)
-Single<List<Uri>> RxGallery.gallery(@NonNull Activity activity, boolean multiSelectEnabled)
-Single<List<Uri>> RxGallery.gallery(@NonNull Activity activity, boolean multiSelectEnabled, @Nullable MimeType... mimeTypes)
+Maybe<List<Uri>> RxGallery.gallery(@NonNull Activity activity)
+Maybe<List<Uri>> RxGallery.gallery(@NonNull Activity activity, boolean multiSelectEnabled)
+Maybe<List<Uri>> RxGallery.gallery(@NonNull Activity activity, boolean multiSelectEnabled, @Nullable MimeType... mimeTypes)
 ```
 
 Example - Picking multiple images/videos from the gallery:
@@ -35,7 +35,7 @@ Example - Picking multiple images/videos from the gallery:
 RxGallery.gallery(this, true, RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO).subscribe(new Consumer<List<Uri>>() {
     @Override
     public void accept(List<Uri> uris) throws Exception {
-        doStuffWithUris(uris); // uris.size() == 0 if user presses back on gallery Activity
+        doStuffWithUris(uris);
 }, new Consumer<Throwable>() {
     @Override
     public void accept(Throwable throwable) throws Exception {
@@ -46,8 +46,8 @@ RxGallery.gallery(this, true, RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO
 **__Taking photos with camera__**
 
 ```
-Single<Uri> RxGallery.photoCapture(@NonNull Activity activity)
-Single<Uri> RxGallery.photoCapture(@NonNull Activity activity, @Nullable Uri outputUri)
+Maybe<Uri> RxGallery.photoCapture(@NonNull Activity activity)
+Maybe<Uri> RxGallery.photoCapture(@NonNull Activity activity, @Nullable Uri outputUri)
 ```
 
 Example - Taking a photo with the camera and saving it to gallery:
@@ -55,9 +55,7 @@ Example - Taking a photo with the camera and saving it to gallery:
 RxGallery.photoCapture(this).subscribe(new Consumer<Uri>() {
     @Override
     public void accept(Uri uri) throws Exception {
-        if (!uri.equals(Uri.EMPTY)) { // Uri is EMPTY if user presses back on photo Activity
-            doStuffWithUri(uri);
-        }
+        doStuffWithUri(uri);
     }
 }, new Consumer<Throwable>() {
     @Override
@@ -84,9 +82,7 @@ permissionObservable.flatMap(new Function<Boolean, ObservableSource<Uri>>() {
 }).subscribe(new Consumer<Uri>() {
     @Override
     public void accept(Uri uri) throws Exception {
-        if (!uri.equals(Uri.EMPTY)) {
-            doStuffWithUri(uri);
-        }
+        doStuffWithUri(uri);
     }
 }, new Consumer<Throwable>() {
     @Override
@@ -98,7 +94,7 @@ permissionObservable.flatMap(new Function<Boolean, ObservableSource<Uri>>() {
 **__Taking videos with camera__**
 
 ```
-Single<Uri> RxGallery.videoCapture(@NonNull Activity activity)
+Maybe<Uri> RxGallery.videoCapture(@NonNull Activity activity)
 ```
 
 Example - Taking a video with the camera and saving it to gallery:
@@ -106,9 +102,7 @@ Example - Taking a video with the camera and saving it to gallery:
 RxGallery.videoCapture(this).subscribe(new Consumer<Uri>() {
     @Override
     public void accept(Uri uri) throws Exception {
-        if (!uri.equals(Uri.EMPTY)) { // Uri is EMPTY if user presses back on video Activity
-            doStuffWithUri(uri);
-        }
+        doStuffWithUri(uri);
 }, new Consumer<Throwable>() {
     @Override
     public void accept(Throwable throwable) throws Exception {

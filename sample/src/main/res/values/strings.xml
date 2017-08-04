@@ -3,7 +3,6 @@
     <string name="pick_from_gallery">Pick From Gallery</string>
     <string name="take_photo">Take Photo</string>
     <string name="take_video">Take Video</string>
-    <string name="cancelled">Cancelled</string>
     <string name="output_dialog_title">Select output location</string>
     <string name="output_dialog_external">External Storage</string>
     <string name="output_dialog_mediastore">MediaStore</string>

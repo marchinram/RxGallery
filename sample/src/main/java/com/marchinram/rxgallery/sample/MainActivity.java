@@ -47,13 +47,12 @@ public final class MainActivity extends AppCompatActivity {
         RxGallery.gallery(this, true, RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO).subscribe(new Consumer<List<Uri>>() {
             @Override
             public void accept(List<Uri> uris) throws Exception {
-                if (!uris.isEmpty()) {
-                    String message = getResources().getQuantityString(R.plurals.selected_items,
-                            uris.size(), uris.size());
-                    Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(MainActivity.this, R.string.cancelled, Toast.LENGTH_LONG).show();
+                StringBuffer message = new StringBuffer(getResources()
+                        .getQuantityString(R.plurals.selected_items, uris.size(), uris.size()));
+                for (Uri uri : uris) {
+                    message.append("\n").append(uri.toString());
                 }
+                Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
             }
         }, new Consumer<Throwable>() {
             @Override
@@ -67,11 +66,7 @@ public final class MainActivity extends AppCompatActivity {
         RxGallery.videoCapture(this).subscribe(new Consumer<Uri>() {
             @Override
             public void accept(Uri uri) throws Exception {
-                if (!uri.equals(Uri.EMPTY)) {
-                    Toast.makeText(MainActivity.this, uri.toString(), Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(MainActivity.this, R.string.cancelled, Toast.LENGTH_LONG).show();
-                }
+                Toast.makeText(MainActivity.this, uri.toString(), Toast.LENGTH_LONG).show();
             }
         }, new Consumer<Throwable>() {
             @Override
@@ -117,11 +112,7 @@ public final class MainActivity extends AppCompatActivity {
         }).subscribe(new Consumer<Uri>() {
             @Override
             public void accept(Uri uri) throws Exception {
-                if (!uri.equals(Uri.EMPTY)) {
-                    Toast.makeText(MainActivity.this, uri.toString(), Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(MainActivity.this, R.string.cancelled, Toast.LENGTH_LONG).show();
-                }
+                Toast.makeText(MainActivity.this, uri.toString(), Toast.LENGTH_LONG).show();
             }
         }, new Consumer<Throwable>() {
             @Override
