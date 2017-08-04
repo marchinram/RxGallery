@@ -35,7 +35,7 @@ Example - Picking multiple images/videos from the gallery:
 RxGallery.gallery(this, true, RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO).subscribe(new Consumer<List<Uri>>() {
     @Override
     public void accept(List<Uri> uris) throws Exception {
-        doStuffWithUris(uris);
+        doStuffWithUris(uris); // uris.size() == 0 if user presses back on gallery Activity
 }, new Consumer<Throwable>() {
     @Override
     public void accept(Throwable throwable) throws Exception {
@@ -55,7 +55,7 @@ Example - Taking a photo with the camera and saving it to gallery:
 RxGallery.photoCapture(this).subscribe(new Consumer<Uri>() {
     @Override
     public void accept(Uri uri) throws Exception {
-        if (!uri.equals(Uri.EMPTY)) { // Uri is EMPTY if user presses back on photo activity
+        if (!uri.equals(Uri.EMPTY)) { // Uri is EMPTY if user presses back on photo Activity
             doStuffWithUri(uri);
         }
     }
@@ -106,7 +106,7 @@ Example - Taking a video with the camera and saving it to gallery:
 RxGallery.videoCapture(this).subscribe(new Consumer<Uri>() {
     @Override
     public void accept(Uri uri) throws Exception {
-        if (!uri.equals(Uri.EMPTY)) { // Uri is EMPTY if user presses back on video activity
+        if (!uri.equals(Uri.EMPTY)) { // Uri is EMPTY if user presses back on video Activity
             doStuffWithUri(uri);
         }
 }, new Consumer<Throwable>() {
@@ -115,3 +115,33 @@ RxGallery.videoCapture(this).subscribe(new Consumer<Uri>() {
         Toast.makeText(MainActivity.this, throwable.getMessage(), Toast.LENGTH_LONG).show();
     }
 });
+```
+## Important
+If you want the started Activity (gallery/photo/video) to be destroyed when the Activity which started it is destroyed you must keep a reference to the `Disposable` and call `dispose` as shown below:
+```
+public final class SomeActivity extends Activity {
+
+    private Disposable disposable;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
+        super.onCreate(savedInstanceState, persistentState);
+        ...
+        
+        disposable = RxGallery.gallery(this).subscribe(new Consumer<List<Uri>>() {
+            @Override
+            public void accept(List<Uri> uris) throws Exception {
+                doStuffWithUris(uris);
+            }
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        disposable.dispose();
+    }
+    
+    ...
+}
+```
