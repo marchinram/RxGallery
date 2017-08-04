@@ -30,17 +30,68 @@ Single<List<Uri>> RxGallery.gallery(@NonNull Activity activity, boolean multiSel
 Single<List<Uri>> RxGallery.gallery(@NonNull Activity activity, boolean multiSelectEnabled, @Nullable MimeType... mimeTypes)
 ```
 
-### Example
-Picking multiple images/videos from the gallery:
+Example - Picking multiple images/videos from the gallery:
 ```
 RxGallery.gallery(this, true, RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO).subscribe(new Consumer<List<Uri>>() {
     @Override
     public void accept(List<Uri> uris) throws Exception {
-      doStuffWithPickedUris(uris);
+        doStuffWithUris(uris);
 }, new Consumer<Throwable>() {
     @Override
     public void accept(Throwable throwable) throws Exception {
-      Toast.makeText(SomeActivity.this, throwable.getMessage(), Toast.LENGTH_LONG).show();
+        Toast.makeText(SomeActivity.this, throwable.getMessage(), Toast.LENGTH_LONG).show();
+    }
+});
+```
+**__Taking photos with camera__**
+
+```
+Single<Uri> RxGallery.photoCapture(@NonNull Activity activity)
+Single<Uri> RxGallery.photoCapture(@NonNull Activity activity, @Nullable Uri outputUri)
+```
+
+Example - Taking a photo with the camera and saving it to gallery:
+```
+RxGallery.photoCapture(this).subscribe(new Consumer<Uri>() {
+    @Override
+    public void accept(Uri uri) throws Exception {
+        if (!uri.equals(Uri.EMPTY)) { // Uri is EMPTY if user presses back on photo activity
+            doStuffWithUri(uri);
+        }
+    }
+}, new Consumer<Throwable>() {
+    @Override
+    public void accept(Throwable throwable) throws Exception {
+        Toast.makeText(SomeActivity.this, throwable.getMessage(), Toast.LENGTH_LONG).show();
+    }
+});
+```
+In 6.0+ you need to ask for WRITE_EXTERNAL_STORAGE permission to save to gallery, below is an example doing this with [RxPermissions](https://github.com/tbruyelle/RxPermissions) and `flatMap`:
+```
+Observable<Boolean> permissionObservable = Observable.just(true);
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    permissionObservable = new RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+}
+
+permissionObservable.flatMap(new Function<Boolean, ObservableSource<Uri>>() {
+    @Override
+    public ObservableSource<Uri> apply(@NonNull Boolean granted) throws Exception {
+        if (!granted) {
+            return Observable.empty();
+        }
+        return RxGallery.photoCapture(SomeActivity.this).toObservable();
+    }
+}).subscribe(new Consumer<Uri>() {
+    @Override
+    public void accept(Uri uri) throws Exception {
+        if (!uri.equals(Uri.EMPTY)) {
+            doStuffWithUri(uri);
+        }
+    }
+}, new Consumer<Throwable>() {
+    @Override
+    public void accept(Throwable throwable) throws Exception {
+        Toast.makeText(SomeActivity.this, throwable.getMessage(), Toast.LENGTH_LONG).show();
     }
 });
 ```
