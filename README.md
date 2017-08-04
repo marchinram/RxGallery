@@ -124,8 +124,8 @@ public final class SomeActivity extends Activity {
     private Disposable disposable;
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
-        super.onCreate(savedInstanceState, persistentState);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         ...
         
         disposable = RxGallery.gallery(this).subscribe(new Consumer<List<Uri>>() {
@@ -140,6 +140,33 @@ public final class SomeActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         disposable.dispose();
+    }
+    
+    ...
+}
+```
+Alternatively you can use [RxLifecycle](https://github.com/trello/RxLifecycle)
+```
+public final class SomeActivity extends RxActivity {
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        ...
+        
+        RxGallery.gallery(this)
+                .compose(this.<List<Uri>>bindUntilEvent(ActivityEvent.DESTROY))
+                .subscribe(new Consumer<List<Uri>>() {
+                    @Override
+                    public void accept(List<Uri> uris) throws Exception {
+                        doStuffWithUris(uris);
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+
+                    }
+                });
     }
     
     ...
