@@ -176,9 +176,10 @@ public final class RxGallery {
             }
             if (o instanceof Request) {
                 Request that = (Request) o;
-                return (this.getSource().equals(that.getSource()))
-                        && (this.getMimeTypes().equals(that.getMimeTypes()))
-                        && (this.multiSelectEnabled == that.multiSelectEnabled);
+                return (getSource().equals(that.getSource()))
+                        && (getMimeTypes().equals(that.getMimeTypes()))
+                        && (isMultiSelectEnabled() == that.isMultiSelectEnabled())
+                        && ((getOutputUri() == null) ? (that.getOutputUri() == null) : getOutputUri().equals(that.getOutputUri()));
             }
             return false;
         }
@@ -187,11 +188,13 @@ public final class RxGallery {
         public int hashCode() {
             int h = 1;
             h *= 1000003;
-            h ^= this.getSource().hashCode();
+            h ^= getSource().hashCode();
             h *= 1000003;
-            h ^= this.getMimeTypes().hashCode();
+            h ^= getMimeTypes().hashCode();
             h *= 1000003;
-            h ^= this.multiSelectEnabled ? 1 : 0;
+            h ^= isMultiSelectEnabled() ? 1 : 0;
+            h *= 1000003;
+            h ^= (getOutputUri() == null) ? 0 : getOutputUri().hashCode();
             return h;
         }
 
