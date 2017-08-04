@@ -68,6 +68,8 @@ public final class RxGallery {
      * or taken photos/videos.
      */
     public static Single<List<Uri>> single(@NonNull final Activity activity, @NonNull final Request request) {
+        final Context appContext = activity.getApplicationContext();
+
         return Single.create(new SingleOnSubscribe<List<Uri>>() {
             @Override
             public void subscribe(@io.reactivex.annotations.NonNull final SingleEmitter<List<Uri>> e) throws Exception {
@@ -88,17 +90,17 @@ public final class RxGallery {
                 };
 
                 IntentFilter intentFilter = new IntentFilter(RxGalleryActivity.FINISHED_ACTION);
-                activity.registerReceiver(receiver, intentFilter);
+                appContext.registerReceiver(receiver, intentFilter);
 
                 e.setDisposable(new MainThreadDisposable() {
                     @Override
                     protected void onDispose() {
-                        activity.unregisterReceiver(receiver);
-                        activity.sendBroadcast(new Intent(RxGalleryActivity.DISPOSED_ACTION));
+                        appContext.unregisterReceiver(receiver);
+                        appContext.sendBroadcast(new Intent(RxGalleryActivity.DISPOSED_ACTION));
                     }
                 });
 
-                Intent intent = new Intent(activity, RxGalleryActivity.class);
+                Intent intent = new Intent(appContext, RxGalleryActivity.class);
                 intent.putExtra(RxGalleryActivity.EXTRA_REQUEST, request);
                 activity.startActivity(intent);
             }

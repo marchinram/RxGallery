@@ -12,34 +12,20 @@ import android.widget.Toast;
 import com.marchinram.rxgallery.RxGallery;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 
 public final class MainActivity extends AppCompatActivity {
 
-    // Should dispose of running Observable/Single to not leak BroadcastReceiver used by RxGallery
-    // Could also use https://github.com/trello/RxLifecycle
-    private final List<Disposable> disposables = new ArrayList<>();
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        for (Disposable d : disposables) {
-            d.dispose();
-        }
     }
 
     public void pickFromGallery(View view) {
@@ -49,7 +35,7 @@ public final class MainActivity extends AppCompatActivity {
                 .setMimeTypes(RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO)
                 .build();
 
-        Disposable d = RxGallery.single(this, request).subscribe(new Consumer<List<Uri>>() {
+        RxGallery.single(this, request).subscribe(new Consumer<List<Uri>>() {
             @Override
             public void accept(List<Uri> uris) throws Exception {
                 Toast.makeText(MainActivity.this, uris.size() + "", Toast.LENGTH_LONG).show();
@@ -60,7 +46,6 @@ public final class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, throwable.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
-        disposables.add(d);
     }
 
     public void takePhoto(View view) {
@@ -81,7 +66,7 @@ public final class MainActivity extends AppCompatActivity {
                 .setSource(isPhoto ? RxGallery.Source.PHOTO_CAPTURE : RxGallery.Source.VIDEO_CAPTURE)
                 .build();
 
-        Disposable d = permissionObservable.flatMap(new Function<Boolean, ObservableSource<List<Uri>>>() {
+        permissionObservable.flatMap(new Function<Boolean, ObservableSource<List<Uri>>>() {
             @Override
             public ObservableSource<List<Uri>> apply(@NonNull Boolean granted) throws Exception {
                 if (!granted) {
@@ -100,7 +85,6 @@ public final class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, throwable.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
-        disposables.add(d);
     }
 
 }
