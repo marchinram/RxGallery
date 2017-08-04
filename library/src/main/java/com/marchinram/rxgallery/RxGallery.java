@@ -1,5 +1,6 @@
 package com.marchinram.rxgallery;
 
+import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -47,20 +48,26 @@ public final class RxGallery {
     }
 
     /**
-     * @param context
-     * @param request
-     * @return
+     * Obtain an Observable for a gallery request.
+     *
+     * @param activity An activity to open gallery or take photo/videos from.
+     * @param request  A request to use.
+     * @return An Observable which calls onNext with the Uris of selected gallery items
+     * or taken photos/videos followed by onComplete.
      */
-    public static Observable<List<Uri>> requestObservable(@NonNull final Context context, @NonNull final Request request) {
-        return requestSingle(context, request).toObservable();
+    public static Observable<List<Uri>> observable(@NonNull final Activity activity, @NonNull final Request request) {
+        return single(activity, request).toObservable();
     }
 
     /**
-     * @param context
-     * @param request
-     * @return
+     * Obtain a Single for a gallery request.
+     *
+     * @param activity An Activity to open gallery or take photo/videos from.
+     * @param request  A Request to use.
+     * @return A Single which calls onSuccess with the Uris of selected gallery items
+     * or taken photos/videos.
      */
-    public static Single<List<Uri>> requestSingle(@NonNull final Context context, @NonNull final Request request) {
+    public static Single<List<Uri>> single(@NonNull final Activity activity, @NonNull final Request request) {
         return Single.create(new SingleOnSubscribe<List<Uri>>() {
             @Override
             public void subscribe(@io.reactivex.annotations.NonNull final SingleEmitter<List<Uri>> e) throws Exception {
@@ -81,19 +88,19 @@ public final class RxGallery {
                 };
 
                 IntentFilter intentFilter = new IntentFilter(RxGalleryActivity.FINISHED_ACTION);
-                context.registerReceiver(receiver, intentFilter);
+                activity.registerReceiver(receiver, intentFilter);
 
                 e.setDisposable(new MainThreadDisposable() {
                     @Override
                     protected void onDispose() {
-                        context.unregisterReceiver(receiver);
-                        context.sendBroadcast(new Intent(RxGalleryActivity.DISPOSED_ACTION));
+                        activity.unregisterReceiver(receiver);
+                        activity.sendBroadcast(new Intent(RxGalleryActivity.DISPOSED_ACTION));
                     }
                 });
 
-                Intent intent = new Intent(context, RxGalleryActivity.class);
+                Intent intent = new Intent(activity, RxGalleryActivity.class);
                 intent.putExtra(RxGalleryActivity.EXTRA_REQUEST, request);
-                context.startActivity(intent);
+                activity.startActivity(intent);
             }
         });
     }
@@ -209,15 +216,16 @@ public final class RxGallery {
             private Uri outputUri;
 
             /**
-             *
+             * Creates a {@link Builder} for a {@link Request}.
              */
             public Builder() {
                 mimeTypes.add(MimeType.IMAGE);
             }
 
             /**
-             * @param source
-             * @return
+             * Sets the {@link Source} for the {@link Request}.
+             *
+             * @return This {@link Builder} object to allow for chaining of calls.
              */
             public Builder setSource(@NonNull Source source) {
                 this.source = source;
@@ -225,8 +233,12 @@ public final class RxGallery {
             }
 
             /**
-             * @param mimeTypes
-             * @return
+             * Sets the mime types to show for a gallery request.
+             * <p>
+             * API levels < KITKAT (19) only allow 1 mime type
+             * so the remaining types provided are ignored on those devices.
+             *
+             * @return This Builder object to allow for chaining of calls.
              */
             public Builder setMimeTypes(@NonNull MimeType... mimeTypes) {
                 if (mimeTypes.length == 0) {
@@ -246,8 +258,12 @@ public final class RxGallery {
             }
 
             /**
-             * @param multiSelectEnabled
-             * @return
+             * Sets whether multiple items can be selected for a gallery request.
+             * <p>
+             * API levels < JELLY_BEAN_MR2 (18) do not support selecting multiple items
+             * so this value is ignored on those devices.
+             *
+             * @return This Builder object to allow for chaining of calls.
              */
             public Builder setMultiSelectEnabled(boolean multiSelectEnabled) {
                 this.multiSelectEnabled = multiSelectEnabled;
@@ -255,7 +271,12 @@ public final class RxGallery {
             }
 
             /**
-             * @param outputUri
+             * Sets the Uri to output to for photo or video requests.
+             * <p>
+             * If none is supplied then will output to the MediaStore EXTERNAL_CONTENT_URI for
+             * videos or images, which requires WRITE_EXTERNAL_STORAGE permission.
+             *
+             * @return This Builder object to allow for chaining of calls.
              */
             public Builder setOutputUri(Uri outputUri) {
                 this.outputUri = outputUri;
@@ -263,7 +284,7 @@ public final class RxGallery {
             }
 
             /**
-             * @return
+             * Creates a Request with the arguments supplied to this builder.
              */
             public Request build() {
                 return new Request(source, mimeTypes, multiSelectEnabled, outputUri);

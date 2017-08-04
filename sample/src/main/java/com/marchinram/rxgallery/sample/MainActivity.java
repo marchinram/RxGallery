@@ -49,7 +49,7 @@ public final class MainActivity extends AppCompatActivity {
                 .setMimeTypes(RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO)
                 .build();
 
-        Disposable d = RxGallery.requestSingle(this, request).subscribe(new Consumer<List<Uri>>() {
+        Disposable d = RxGallery.single(this, request).subscribe(new Consumer<List<Uri>>() {
             @Override
             public void accept(List<Uri> uris) throws Exception {
                 Toast.makeText(MainActivity.this, uris.size() + "", Toast.LENGTH_LONG).show();
@@ -87,7 +87,7 @@ public final class MainActivity extends AppCompatActivity {
                 if (!granted) {
                     return Observable.empty();
                 }
-                return RxGallery.requestObservable(MainActivity.this, request);
+                return RxGallery.observable(MainActivity.this, request);
             }
         }).subscribe(new Consumer<List<Uri>>() {
             @Override
