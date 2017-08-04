@@ -1,5 +1,5 @@
 # RxGallery
-Gallery &amp; photo/video functionality simplified with RxJava2
+Android gallery &amp; photo/video functionality simplified with RxJava2
 
 ## Setup
 To use this library your `minSdkVersion` must be >= 9.
@@ -13,7 +13,9 @@ allprojects {
     maven { url 'https://jitpack.io' }
   }
 }
-
+```
+Add the dependency
+```
 dependencies {
   compile 'com.github.marchinram:RxGallery:0.5.0'
 }
