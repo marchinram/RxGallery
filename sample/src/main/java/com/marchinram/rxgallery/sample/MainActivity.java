@@ -1,18 +1,28 @@
 package com.marchinram.rxgallery.sample;
 
 import android.Manifest;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.content.FileProvider;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.marchinram.rxgallery.RxGallery;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
@@ -22,10 +32,15 @@ import io.reactivex.functions.Function;
 
 public final class MainActivity extends AppCompatActivity {
 
+    private static final String AUTHORITY = "com.marchinram.rxgallery.sample.fileprovider";
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Button takeVideoButton = (Button) findViewById(R.id.take_video_btn);
+        takeVideoButton.setEnabled(getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA));
     }
 
     public void pickFromGallery(View view) {
@@ -49,21 +64,50 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     public void takePhoto(View view) {
-        takePhotoOrVideo(true);
+        String[] items = new String[]{getString(R.string.output_dialog_external),
+                getString(R.string.output_dialog_mediastore)};
+
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.output_dialog_title))
+                .setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Uri outputUri = null;
+                        if (which == 0) {
+                            outputUri = getExternalStorageUri();
+                        }
+                        takePhoto(outputUri);
+                        dialog.dismiss();
+                    }
+                }).show();
     }
 
     public void takeVideo(View view) {
-        takePhotoOrVideo(false);
+        RxGallery.Request request = new RxGallery.Request.Builder()
+                .setSource(RxGallery.Source.VIDEO_CAPTURE)
+                .build();
+        RxGallery.single(this, request).subscribe(new Consumer<List<Uri>>() {
+            @Override
+            public void accept(List<Uri> uris) throws Exception {
+                Toast.makeText(MainActivity.this, uris.size() + "", Toast.LENGTH_LONG).show();
+            }
+        }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Exception {
+                Toast.makeText(MainActivity.this, throwable.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
-    private void takePhotoOrVideo(boolean isPhoto) {
+    private void takePhoto(Uri outputUri) {
         Observable<Boolean> permissionObservable = Observable.just(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             permissionObservable = new RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
 
         final RxGallery.Request request = new RxGallery.Request.Builder()
-                .setSource(isPhoto ? RxGallery.Source.PHOTO_CAPTURE : RxGallery.Source.VIDEO_CAPTURE)
+                .setSource(RxGallery.Source.PHOTO_CAPTURE)
+                .setOutputUri(outputUri)
                 .build();
 
         permissionObservable.flatMap(new Function<Boolean, ObservableSource<List<Uri>>>() {
@@ -85,6 +129,24 @@ public final class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, throwable.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private Uri getExternalStorageUri() {
+        Uri uri = null;
+        try {
+            File directory = new File(getExternalFilesDir(null), "images");
+            if (!directory.exists()) {
+                if (!directory.mkdir()) {
+                    throw new IOException();
+                }
+            }
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            File file = File.createTempFile(timeStamp, ".jpg", directory);
+            uri = FileProvider.getUriForFile(MainActivity.this, AUTHORITY, file);
+        } catch (IOException e) {
+            Toast.makeText(this, getString(R.string.output_file_error), Toast.LENGTH_LONG).show();
+        }
+        return uri;
     }
 
 }

@@ -36,7 +36,9 @@ public final class RxGalleryActivity extends Activity {
 
     private static final int RC_GALLERY = 1000;
 
-    private static final int RC_TAKE_PHOTO_OR_VIDEO = 1001;
+    private static final int RC_TAKE_PHOTO = 1001;
+
+    private static final int RC_TAKE_VIDEO = 1002;
 
     private Uri outputUri;
 
@@ -58,9 +60,12 @@ public final class RxGalleryActivity extends Activity {
             case GALLERY:
                 handleIntentRequestPair(getGalleryIntentRequestPair(request));
                 break;
-            default:
+            case VIDEO_CAPTURE:
+                handleIntentRequestPair(getVideoCaptureIntentRequestPair());
+                break;
+            case PHOTO_CAPTURE:
                 try {
-                    handleIntentRequestPair(getPhotoOrVideoCaptureIntentRequestPair(request));
+                    handleIntentRequestPair(getPhotoCaptureIntentRequestPair(request));
                 } catch (SecurityException e) {
                     sendErrorSecurity(e);
                 }
@@ -84,7 +89,10 @@ public final class RxGalleryActivity extends Activity {
                 case RC_GALLERY:
                     uris = handleGallery(data);
                     break;
-                default:
+                case RC_TAKE_VIDEO:
+                    uris.add(data.getData());
+                    break;
+                case RC_TAKE_PHOTO:
                     uris.add(outputUri);
                     break;
             }
@@ -98,7 +106,8 @@ public final class RxGalleryActivity extends Activity {
 
     private void finishAll() {
         finishActivity(RC_GALLERY);
-        finishActivity(RC_TAKE_PHOTO_OR_VIDEO);
+        finishActivity(RC_TAKE_PHOTO);
+        finishActivity(RC_TAKE_VIDEO);
         finish();
     }
 
@@ -148,10 +157,8 @@ public final class RxGalleryActivity extends Activity {
         return new Pair<>(intent, RC_GALLERY);
     }
 
-    private Pair<Intent, Integer> getPhotoOrVideoCaptureIntentRequestPair(RxGallery.Request request) throws SecurityException {
-        String action = request.getSource() == RxGallery.Source.PHOTO_CAPTURE ?
-                MediaStore.ACTION_IMAGE_CAPTURE : MediaStore.ACTION_VIDEO_CAPTURE;
-        Intent intent = new Intent(action);
+    private Pair<Intent, Integer> getPhotoCaptureIntentRequestPair(RxGallery.Request request) throws SecurityException {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
         if (request.getOutputUri() != null) {
             outputUri = request.getOutputUri();
@@ -160,7 +167,12 @@ public final class RxGalleryActivity extends Activity {
         }
         intent.putExtra(MediaStore.EXTRA_OUTPUT, outputUri);
 
-        return new Pair<>(intent, RC_TAKE_PHOTO_OR_VIDEO);
+        return new Pair<>(intent, RC_TAKE_PHOTO);
+    }
+
+    private Pair<Intent, Integer> getVideoCaptureIntentRequestPair() {
+        Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        return new Pair<>(intent, RC_TAKE_VIDEO);
     }
 
     private Uri createMedia(@NonNull RxGallery.Request request) throws SecurityException {

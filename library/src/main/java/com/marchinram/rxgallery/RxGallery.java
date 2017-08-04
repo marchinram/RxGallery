@@ -273,10 +273,10 @@ public final class RxGallery {
             }
 
             /**
-             * Sets the Uri to output to for photo or video requests.
+             * Sets the Uri to output to for photo requests.
              * <p>
-             * If none is supplied then will output to the MediaStore EXTERNAL_CONTENT_URI for
-             * videos or images, which requires WRITE_EXTERNAL_STORAGE permission.
+             * If none is supplied then will output to MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+             * which requires WRITE_EXTERNAL_STORAGE permission.
              *
              * @return This Builder object to allow for chaining of calls.
              */
