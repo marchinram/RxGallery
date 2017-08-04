@@ -11,16 +11,17 @@ import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
 import io.reactivex.android.MainThreadDisposable;
+import io.reactivex.functions.Function;
 
 public final class RxGallery {
 
@@ -48,26 +49,108 @@ public final class RxGallery {
     }
 
     /**
-     * Obtain an Observable for a gallery request.
+     * Returns a Single for a gallery display.
      *
-     * @param activity An activity to open gallery or take photo/videos from.
-     * @param request  A request to use.
-     * @return An Observable which calls onNext with the Uris of selected gallery items
-     * or taken photos/videos followed by onComplete.
+     * @param activity An Activity to open gallery from.
+     * @return A Single which calls onSuccess with the Uris of selected gallery items.
      */
-    public static Observable<List<Uri>> observable(@NonNull final Activity activity, @NonNull final Request request) {
-        return single(activity, request).toObservable();
+    public static Single<List<Uri>> gallery(@NonNull Activity activity) {
+        return gallery(activity, false);
     }
 
     /**
-     * Obtain a Single for a gallery request.
+     * Returns a Single for a gallery display.
+     *
+     * @param activity           An Activity to open gallery from.
+     * @param multiSelectEnabled Whether multiple items can be selected.
+     *                           API levels < JELLY_BEAN_MR2 (18) do not support selecting multiple
+     *                           items so this value is ignored on those devices.
+     * @return A Single which calls onSuccess with the Uris of selected gallery items.
+     */
+    public static Single<List<Uri>> gallery(@NonNull Activity activity, boolean multiSelectEnabled) {
+        return gallery(activity, multiSelectEnabled, MimeType.IMAGE);
+    }
+
+    /**
+     * Returns a Single for a gallery display.
+     *
+     * @param activity           An Activity to open gallery from.
+     * @param multiSelectEnabled Whether multiple items can be selected.
+     *                           API levels < JELLY_BEAN_MR2 (18) do not support selecting multiple
+     *                           items so this value is ignored on those devices.
+     * @param mimeTypes          Mime types to show for a gallery.
+     *                           API levels < KITKAT (19) only allow 1 mime type
+     *                           so the remaining types provided are ignored on those devices.
+     * @return A Single which calls onSuccess with the Uris of selected gallery items.
+     */
+    public static Single<List<Uri>> gallery(@NonNull Activity activity, boolean multiSelectEnabled, @Nullable MimeType... mimeTypes) {
+        Request request = new Request.Builder()
+                .setSource(Source.GALLERY)
+                .setMultiSelectEnabled(multiSelectEnabled)
+                .setMimeTypes(mimeTypes)
+                .build();
+        return request(activity, request);
+    }
+
+    /**
+     * Returns a Single for a photo capture.
+     *
+     * @param activity An Activity to open photo capture from.
+     * @return A Single which calls onSuccess with the Uri of captured photo.
+     */
+    public static Single<Uri> photoCapture(@NonNull Activity activity) {
+        return photoCapture(activity, null);
+    }
+
+    /**
+     * Returns a Single for a photo capture.
+     *
+     * @param activity  An Activity to open photo capture from.
+     * @param outputUri Uri to output to for photo requests.
+     *                  If none is supplied then will output to MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+     *                  which requires WRITE_EXTERNAL_STORAGE permission.
+     * @return A Single which calls onSuccess with the Uri of captured photo.
+     */
+    public static Single<Uri> photoCapture(@NonNull Activity activity, @Nullable Uri outputUri) {
+        Request request = new Request.Builder()
+                .setSource(Source.PHOTO_CAPTURE)
+                .setOutputUri(outputUri)
+                .build();
+        return request(activity, request).map(new Function<List<Uri>, Uri>() {
+            @Override
+            public Uri apply(@io.reactivex.annotations.NonNull List<Uri> uris) throws Exception {
+                return !uris.isEmpty() ? uris.get(0) : Uri.EMPTY;
+            }
+        });
+    }
+
+    /**
+     * Returns a Single for a video capture.
+     *
+     * @param activity An Activity to open video capture from.
+     * @return A Single which calls onSuccess with the Uri of captured video.
+     */
+    public static Single<Uri> videoCapture(@NonNull Activity activity) {
+        Request request = new Request.Builder()
+                .setSource(Source.VIDEO_CAPTURE)
+                .build();
+        return request(activity, request).map(new Function<List<Uri>, Uri>() {
+            @Override
+            public Uri apply(@io.reactivex.annotations.NonNull List<Uri> uris) throws Exception {
+                return !uris.isEmpty() ? uris.get(0) : Uri.EMPTY;
+            }
+        });
+    }
+
+    /**
+     * Returns a Single for a gallery request.
      *
      * @param activity An Activity to open gallery or take photo/videos from.
      * @param request  A Request to use.
      * @return A Single which calls onSuccess with the Uris of selected gallery items
-     * or taken photos/videos.
+     * or captured photos/videos.
      */
-    public static Single<List<Uri>> single(@NonNull final Activity activity, @NonNull final Request request) {
+    public static Single<List<Uri>> request(@NonNull final Activity activity, @NonNull final Request request) {
         final Context appContext = activity.getApplicationContext();
 
         return Single.create(new SingleOnSubscribe<List<Uri>>() {
@@ -242,8 +325,8 @@ public final class RxGallery {
              *
              * @return This Builder object to allow for chaining of calls.
              */
-            public Builder setMimeTypes(@NonNull MimeType... mimeTypes) {
-                if (mimeTypes.length == 0) {
+            public Builder setMimeTypes(@Nullable MimeType... mimeTypes) {
+                if (mimeTypes == null || mimeTypes.length == 0) {
                     return this;
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {

@@ -44,16 +44,34 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     public void pickFromGallery(View view) {
-        RxGallery.Request request = new RxGallery.Request.Builder()
-                .setSource(RxGallery.Source.GALLERY)
-                .setMultiSelectEnabled(true)
-                .setMimeTypes(RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO)
-                .build();
-
-        RxGallery.single(this, request).subscribe(new Consumer<List<Uri>>() {
+        RxGallery.gallery(this, true, RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO).subscribe(new Consumer<List<Uri>>() {
             @Override
             public void accept(List<Uri> uris) throws Exception {
-                Toast.makeText(MainActivity.this, uris.size() + "", Toast.LENGTH_LONG).show();
+                if (!uris.isEmpty()) {
+                    String message = getResources().getQuantityString(R.plurals.selected_items,
+                            uris.size(), uris.size());
+                    Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(MainActivity.this, R.string.cancelled, Toast.LENGTH_LONG).show();
+                }
+            }
+        }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Exception {
+                Toast.makeText(MainActivity.this, throwable.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    public void takeVideo(View view) {
+        RxGallery.videoCapture(this).subscribe(new Consumer<Uri>() {
+            @Override
+            public void accept(Uri uri) throws Exception {
+                if (!uri.equals(Uri.EMPTY)) {
+                    Toast.makeText(MainActivity.this, uri.toString(), Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(MainActivity.this, R.string.cancelled, Toast.LENGTH_LONG).show();
+                }
             }
         }, new Consumer<Throwable>() {
             @Override
@@ -82,46 +100,28 @@ public final class MainActivity extends AppCompatActivity {
                 }).show();
     }
 
-    public void takeVideo(View view) {
-        RxGallery.Request request = new RxGallery.Request.Builder()
-                .setSource(RxGallery.Source.VIDEO_CAPTURE)
-                .build();
-        RxGallery.single(this, request).subscribe(new Consumer<List<Uri>>() {
-            @Override
-            public void accept(List<Uri> uris) throws Exception {
-                Toast.makeText(MainActivity.this, uris.size() + "", Toast.LENGTH_LONG).show();
-            }
-        }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) throws Exception {
-                Toast.makeText(MainActivity.this, throwable.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
-    private void takePhoto(Uri outputUri) {
+    private void takePhoto(final Uri outputUri) {
         Observable<Boolean> permissionObservable = Observable.just(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             permissionObservable = new RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
 
-        final RxGallery.Request request = new RxGallery.Request.Builder()
-                .setSource(RxGallery.Source.PHOTO_CAPTURE)
-                .setOutputUri(outputUri)
-                .build();
-
-        permissionObservable.flatMap(new Function<Boolean, ObservableSource<List<Uri>>>() {
+        permissionObservable.flatMap(new Function<Boolean, ObservableSource<Uri>>() {
             @Override
-            public ObservableSource<List<Uri>> apply(@NonNull Boolean granted) throws Exception {
+            public ObservableSource<Uri> apply(@NonNull Boolean granted) throws Exception {
                 if (!granted) {
                     return Observable.empty();
                 }
-                return RxGallery.observable(MainActivity.this, request);
+                return RxGallery.photoCapture(MainActivity.this, outputUri).toObservable();
             }
-        }).subscribe(new Consumer<List<Uri>>() {
+        }).subscribe(new Consumer<Uri>() {
             @Override
-            public void accept(List<Uri> uris) throws Exception {
-                Toast.makeText(MainActivity.this, uris.size() + "", Toast.LENGTH_LONG).show();
+            public void accept(Uri uri) throws Exception {
+                if (!uri.equals(Uri.EMPTY)) {
+                    Toast.makeText(MainActivity.this, uri.toString(), Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(MainActivity.this, R.string.cancelled, Toast.LENGTH_LONG).show();
+                }
             }
         }, new Consumer<Throwable>() {
             @Override
