@@ -1,4 +1,4 @@
-# RxGallery
+# RxGallery [![](https://jitpack.io/v/marchinram/RxGallery.svg)](https://jitpack.io/#marchinram/RxGallery)
 Android gallery &amp; photo/video functionality simplified with RxJava2
 
 ## Setup
