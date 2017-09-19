@@ -1,5 +1,5 @@
-# RxGallery [![](https://jitpack.io/v/marchinram/RxGallery.svg)](https://jitpack.io/#marchinram/RxGallery)
-Android gallery &amp; photo/video functionality simplified with RxJava2
+# RxGallery [![](https://jitpack.io/v/marchinram/RxGallery.svg)](https://jitpack.io/#marchinram/RxGallery) [![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-RxGallery-brightgreen.svg?style=flat)](https://android-arsenal.com/details/1/6222)
+Android gallery &amp; photo/video functionality simplified with RxJava2 
 
 ## Setup
 To use this library your `minSdkVersion` must be >= 9.
