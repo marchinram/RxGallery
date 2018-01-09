@@ -5,6 +5,7 @@
 
         <activity
             android:name=".RxGalleryActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
     </application>
