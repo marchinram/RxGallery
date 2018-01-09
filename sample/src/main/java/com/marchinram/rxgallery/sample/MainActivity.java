@@ -39,7 +39,7 @@ public final class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button takeVideoButton = (Button) findViewById(R.id.take_video_btn);
+        Button takeVideoButton = findViewById(R.id.take_video_btn);
         takeVideoButton.setEnabled(getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA));
     }
 
