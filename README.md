@@ -17,7 +17,7 @@ allprojects {
 Add the dependency
 ```
 dependencies {
-  compile 'com.github.marchinram:RxGallery:0.6.1'
+  compile 'com.github.marchinram:RxGallery:0.6.2'
 }
 ```
 
