@@ -36,6 +36,7 @@ RxGallery.gallery(this, true, RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO
     @Override
     public void accept(List<Uri> uris) throws Exception {
         doStuffWithUris(uris);
+    }
 }, new Consumer<Throwable>() {
     @Override
     public void accept(Throwable throwable) throws Exception {
