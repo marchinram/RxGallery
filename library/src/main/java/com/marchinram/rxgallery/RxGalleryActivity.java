@@ -191,8 +191,10 @@ public final class RxGalleryActivity extends Activity {
         } else { // Multi select
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
                 ClipData clipData = data.getClipData();
-                for (int i = 0; i < clipData.getItemCount(); i++) {
-                    uris.add(clipData.getItemAt(i).getUri());
+                if (clipData != null) {
+                    for (int i = 0; i < clipData.getItemCount(); i++) {
+                        uris.add(clipData.getItemAt(i).getUri());
+                    }
                 }
             }
         }
