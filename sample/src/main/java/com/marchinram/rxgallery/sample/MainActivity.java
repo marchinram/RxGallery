@@ -27,12 +27,15 @@ import java.util.Locale;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 
 public final class MainActivity extends AppCompatActivity {
 
     private static final String AUTHORITY = "com.marchinram.rxgallery.sample.fileprovider";
+
+    private Disposable disposable;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -43,8 +46,17 @@ public final class MainActivity extends AppCompatActivity {
         takeVideoButton.setEnabled(getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA));
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if (disposable != null && !disposable.isDisposed()) {
+            disposable.dispose();
+        }
+    }
+
     public void pickFromGallery(View view) {
-        RxGallery.gallery(this, true, RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO).subscribe(new Consumer<List<Uri>>() {
+        disposable = RxGallery.gallery(this, true, RxGallery.MimeType.IMAGE, RxGallery.MimeType.VIDEO).subscribe(new Consumer<List<Uri>>() {
             @Override
             public void accept(List<Uri> uris) throws Exception {
                 StringBuffer message = new StringBuffer(getResources()
@@ -63,7 +75,7 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     public void takeVideo(View view) {
-        RxGallery.videoCapture(this).subscribe(new Consumer<Uri>() {
+        disposable = RxGallery.videoCapture(this).subscribe(new Consumer<Uri>() {
             @Override
             public void accept(Uri uri) throws Exception {
                 Toast.makeText(MainActivity.this, uri.toString(), Toast.LENGTH_LONG).show();
@@ -101,7 +113,7 @@ public final class MainActivity extends AppCompatActivity {
             permissionObservable = new RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
 
-        permissionObservable.flatMap(new Function<Boolean, ObservableSource<Uri>>() {
+        disposable =  permissionObservable.flatMap(new Function<Boolean, ObservableSource<Uri>>() {
             @Override
             public ObservableSource<Uri> apply(@NonNull Boolean granted) throws Exception {
                 if (!granted) {
