@@ -145,13 +145,13 @@ public final class RxGallery {
     /**
      * Returns a Maybe for a gallery request.
      *
-     * @param activity An Activity to open gallery or take photo/videos from.
+     * @param context A Context to open gallery or take photo/videos from.
      * @param request  A Request to use.
      * @return A Maybe which calls onSuccess with the Uris of selected gallery items
      * or captured photos/videos.
      */
-    public static Maybe<List<Uri>> request(@NonNull final Activity activity, @NonNull final Request request) {
-        final Context appContext = activity.getApplicationContext();
+    public static Maybe<List<Uri>> request(@NonNull final Context context, @NonNull final Request request) {
+        final Context appContext = context.getApplicationContext();
 
         return Maybe.create(new MaybeOnSubscribe<List<Uri>>() {
             @Override
@@ -189,7 +189,7 @@ public final class RxGallery {
 
                 Intent intent = new Intent(appContext, RxGalleryActivity.class);
                 intent.putExtra(RxGalleryActivity.EXTRA_REQUEST, request);
-                activity.startActivity(intent);
+                context.startActivity(intent);
             }
         });
     }
