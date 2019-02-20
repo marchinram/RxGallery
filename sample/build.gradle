@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion '27.0.3'
+    compileSdkVersion 27
+    buildToolsVersion '28.0.3'
 
     defaultConfig {
         applicationId "com.marchinram.rxgallery.sample"
         // RxGallery works for API 9+, 14 is needed to support appcompat-v7:26.1.0
         minSdkVersion 14
-        targetSdkVersion 26
+        targetSdkVersion 27
         versionCode 1
         versionName "1.0"
 
@@ -30,6 +30,6 @@ dependencies {
     })
     testImplementation 'junit:junit:4.12'
     implementation project(':library')
-    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support:appcompat-v7:27.1.1'
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.4@aar'
 }
