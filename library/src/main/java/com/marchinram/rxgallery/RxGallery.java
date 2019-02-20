@@ -23,6 +23,7 @@ import io.reactivex.MaybeOnSubscribe;
 import io.reactivex.android.MainThreadDisposable;
 import io.reactivex.functions.Function;
 
+@SuppressWarnings({"unused", "WeakerAccess", "SameParameterValue"})
 public final class RxGallery {
 
     public enum Source {
@@ -146,7 +147,7 @@ public final class RxGallery {
      * Returns a Maybe for a gallery request.
      *
      * @param context A Context to open gallery or take photo/videos from.
-     * @param request  A Request to use.
+     * @param request A Request to use.
      * @return A Maybe which calls onSuccess with the Uris of selected gallery items
      * or captured photos/videos.
      */
